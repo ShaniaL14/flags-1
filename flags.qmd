@@ -1,0 +1,55 @@
+---
+title: "Country Flags"
+format: html
+execute:
+  echo: false
+---
+
+```{r}
+#| label: setup
+#| include: false
+
+library(tidyverse)
+library(countrycode)
+
+# List all flag files and map codes to country names
+files <- list.files("data", pattern = "\\.png$")
+codes <- sub("\\.png$", "", files)
+
+flag_data <- tibble(
+  code = codes,
+  name = countrycode(
+    toupper(codes),
+    origin = "iso2c",
+    destination = "country.name",
+    custom_match = c(
+      "GB-ENG" = "England",
+      "GB-NIR" = "Northern Ireland",
+      "GB-SCT" = "Scotland",
+      "GB-WLS" = "Wales",
+      "XK" = "Kosovo"
+    )
+  )
+) |>
+  drop_na(name) |>
+  arrange(name)
+
+# Pass the data to Observable JS
+ojs_define(flag_data = flag_data)
+```
+
+```{ojs}
+// Transform columnar data into an array of objects
+flags = transpose(flag_data)
+
+// Dropdown input to select a country
+viewof selected = Inputs.select(flags, {
+  label: "Select a country:",
+  format: d => d.name
+})
+
+// Display the selected flag image
+html`<div style="margin-top: 20px;">
+  <img src="data/${selected.code}.png" alt="${selected.name}" style="max-width: 400px; border: 1px solid #ccc; border-radius: 4px;" />
+</div>`
+```
